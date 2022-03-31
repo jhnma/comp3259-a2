@@ -11,6 +11,7 @@ data BinaryOp = Add | Sub | Mult | Div
 data UnaryOp
   = Neg
   | Not
+  deriving Eq
 
 data Value
   = IntV Int    -- Integers
@@ -46,6 +47,7 @@ data Exp = Lit Value
          | Var String
          | Decl String Exp Exp
          | Call String [Exp]
+         deriving Eq
 
 prog1 :: Program
 prog1 =

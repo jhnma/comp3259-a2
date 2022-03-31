@@ -68,11 +68,24 @@ evaluate' (Decl v a b) env =
   in evaluate' b env'
 evaluate' _ _ = error "You are in trouble"
 
-
-
 fsubst :: (String, Function) -> Exp -> Exp
-fsubst (f, Function xs body) e = error "TODO Question 5"
+fsubst (f, Function params body) e = case e of
+  Call fname args -> if f == fname then case args of
+    [] -> body
+    (a : as) -> Decl (fst $ head params) a (fsubst (f, Function (tail params) body) e)
+    else e
+  _ -> e
 
+repeatfsubst :: FunEnv -> Exp -> Exp
+repeatfsubst []     exp = exp
+repeatfsubst (f:fs) exp = if result == exp then repeatfsubst fs exp else result where result = fsubst f exp
 
 execute' :: Program -> Value
-execute' (Program funEnv main) = error "TODO Question 6"
+execute' (Program funEnv main) = case main of
+  Lit n -> n
+  Unary uop exp -> evaluate' (Unary uop (repeatfsubst funEnv exp)) []
+  Bin bop exp1 exp2 -> evaluate' (Bin bop (repeatfsubst funEnv exp1) (repeatfsubst funEnv exp2)) []
+  If exp1 exp2 exp3 -> evaluate' (If (repeatfsubst funEnv exp1) (repeatfsubst funEnv exp2) (repeatfsubst funEnv exp3)) []
+  Var s -> evaluate' (Var s) []
+  Decl str exp1 exp2 -> evaluate' (Decl str (repeatfsubst funEnv exp1) (repeatfsubst funEnv exp2)) []
+  _ -> error "should not be here"
