@@ -68,6 +68,18 @@ evaluate' (Decl v a b) env =
   in evaluate' b env'
 evaluate' _ _ = error "You are in trouble"
 
+-- | Function substitution
+--
+-- Examples:
+--
+-- >>> fsubst ("absolute", Function [("x",TInt)] (If (Bin GT (Var "x") (Lit (IntV 0))) (Var "x") (Unary Neg (Var "x")))) (Call "absolute" [Lit (IntV (-5))])
+-- var x = -5; if (x > 0) x; else -x
+--
+-- >>> fsubst ("absolute", Function [("x",TInt)] (If (Bin GT (Var "x") (Lit (IntV 0))) (Var "x") (Unary Neg (Var "x")))) (Call "absolute" [Call "absolute" [Lit (IntV (-5))]])
+-- var x = var x = -5; if (x > 0) x; else -x; if (x > 0) x; else -x
+--
+-- (Although the pretty-printing seems weird, the expression above is valid.)
+
 fsubst :: (String, Function) -> Exp -> Exp
 fsubst (f, Function params body) e = case e of
   Call fname args -> if f == fname then case args of
@@ -79,6 +91,17 @@ fsubst (f, Function params body) e = case e of
 repeatfsubst :: FunEnv -> Exp -> Exp
 repeatfsubst []     exp = exp
 repeatfsubst (f:fs) exp = if result == exp then repeatfsubst fs exp else result where result = fsubst f exp
+
+
+-- | Execution with function substitution
+--
+-- Examples:
+--
+-- >>> execute' prog1
+-- 5
+--
+-- >>> execute' prog2
+-- 5
 
 execute' :: Program -> Value
 execute' (Program funEnv main) = case main of

@@ -27,6 +27,30 @@ tbinary EQ   t1    t2    | t1 == t2 = Just TBool
 tbinary _ _ _ = Nothing
 
 
+-- | Type checking function definitions
+--
+-- Examples:
+--
+-- >>> :{
+--   checkFunEnv [ ("foo", Function [("x",TInt), ("y",TInt)] (Bin Add (Var "x") (Var "y")))
+--               , ("bar", Function [("x",TInt)] (Call "foo" [Var "x", Var "x"]))
+--               ]
+-- :}
+-- Just [("foo",([("x",Int),("y",Int)],Int)),("bar",([("x",Int)],Int))]
+--
+-- >>> :{
+--   checkFunEnv [ ("foo", Function [("x",TInt), ("y",TInt)] (Bin Add (Var "x") (Var "y")))
+--               , ("err", Function [("x",TInt)] (Call "foo" [Var "x"]))
+--               ]
+-- :}
+-- Nothing
+--
+-- >>> checkFunEnv [ ("err", Function [("x",TInt)] (Call "foo" [Var "x", Var "x"])) ]
+-- Nothing
+--
+-- >>> checkFunEnv [ ("err", Function [("x",TBool)] (Bin Add (Var "x") (Var "x"))) ]
+-- Nothing
+
 checkFunEnv :: FunEnv -> Maybe TFunEnv
 checkFunEnv fds = checkFunEnv1 fds [] -- starts with an empty function type environment
   where
@@ -87,6 +111,19 @@ tcheck (Decl v e1 e2) tenv fenv =
     Just t  -> tcheck e2 ((v, t) : tenv) fenv
     Nothing -> Nothing
 
+
+-- | Type checking function definitions
+--
+-- Examples:
+--
+-- >>> checkProgram prog1
+-- True
+--
+-- >>> checkProgram prog2
+-- True
+--
+-- >>> checkProgram (Program [] (Call "max" [Call "absolute" [Lit (IntV (-5))], Lit (IntV 4)]))
+-- False
 
 checkProgram :: Program -> Bool
 checkProgram (Program funenv exp) = case checkFunEnv funenv of
